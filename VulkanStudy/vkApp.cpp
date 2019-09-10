@@ -1,5 +1,7 @@
 #include "vkApp.h"
 
+// todo : to data...
+static const bool useCustomAllocator = false;
 
 VkResult vkApp::Init()
 {
@@ -18,7 +20,14 @@ VkResult vkApp::Init()
 	ici.sType = VkStructureType::VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 	ici.pApplicationInfo = &appInfo;
 
-	result = vkCreateInstance(&ici, nullptr, &m_Instance);
+	VkAllocationCallbacks* callbackPtr = nullptr;
+	VkAllocationCallbacks allocCallbacks = {};
+	if (useCustomAllocator)
+	{
+		allocCallbacks = m_MemoryAllocator;
+	}
+
+	result = vkCreateInstance(&ici, callbackPtr, &m_Instance);
 
 	// get physical devices
 	if (result != VK_SUCCESS)
@@ -90,7 +99,7 @@ VkResult vkApp::Init()
 			&requiredFeatures
 		};
 		
-		vkCreateDevice(m_PhysicalDevices[0], &dci, nullptr, &m_Device);
+		vkCreateDevice(m_PhysicalDevices[0], &dci, callbackPtr, &m_Device);
 	}
 	
 	// instance layer
@@ -127,10 +136,17 @@ VkResult vkApp::Finish()
 {
 	VkResult result = VK_SUCCESS;
 
-	vkDeviceWaitIdle(m_Device);
-	vkDestroyDevice(m_Device, nullptr);
+	VkAllocationCallbacks* callbackPtr = nullptr;
+	VkAllocationCallbacks allocCallbacks = {};
+	if (useCustomAllocator)
+	{
+		allocCallbacks = m_MemoryAllocator;
+	}
 
-	vkDestroyInstance(m_Instance, nullptr);
+	vkDeviceWaitIdle(m_Device);
+	vkDestroyDevice(m_Device, callbackPtr);
+
+	vkDestroyInstance(m_Instance, callbackPtr);
 
 
 	return result;

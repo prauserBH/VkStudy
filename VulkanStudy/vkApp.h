@@ -1,4 +1,5 @@
-#include <vulkan\vulkan.h>
+
+#include "memoryAllocator.h"
 
 #include <vector>
 
@@ -14,6 +15,8 @@ private:
 
 	std::vector<VkLayerProperties> m_LayerProperties;
 	std::vector<VkExtensionProperties> m_ExtensionProperties;
+
+	PSMemoryAllocator m_MemoryAllocator;
 public:
 	VkResult Init();
 	VkResult Finish();
