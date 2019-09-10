@@ -20,14 +20,14 @@ VkResult vkApp::Init()
 	ici.sType = VkStructureType::VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 	ici.pApplicationInfo = &appInfo;
 
-	VkAllocationCallbacks* callbackPtr = nullptr;
-	VkAllocationCallbacks allocCallbacks = {};
+	m_CallbackPtr = nullptr;
 	if (useCustomAllocator)
 	{
-		allocCallbacks = m_MemoryAllocator;
+		m_AllocCallbacks = (VkAllocationCallbacks)m_MemoryAllocator;		
+		m_CallbackPtr = &m_AllocCallbacks;
 	}
 
-	result = vkCreateInstance(&ici, callbackPtr, &m_Instance);
+	result = vkCreateInstance(&ici, m_CallbackPtr, &m_Instance);
 
 	// get physical devices
 	if (result != VK_SUCCESS)
@@ -99,7 +99,7 @@ VkResult vkApp::Init()
 			&requiredFeatures
 		};
 		
-		vkCreateDevice(m_PhysicalDevices[0], &dci, callbackPtr, &m_Device);
+		vkCreateDevice(m_PhysicalDevices[0], &dci, m_CallbackPtr, &m_Device);
 	}
 	
 	// instance layer
@@ -136,18 +136,51 @@ VkResult vkApp::Finish()
 {
 	VkResult result = VK_SUCCESS;
 
-	VkAllocationCallbacks* callbackPtr = nullptr;
-	VkAllocationCallbacks allocCallbacks = {};
-	if (useCustomAllocator)
-	{
-		allocCallbacks = m_MemoryAllocator;
-	}
-
 	vkDeviceWaitIdle(m_Device);
-	vkDestroyDevice(m_Device, callbackPtr);
+	vkDestroyDevice(m_Device, m_CallbackPtr);
 
-	vkDestroyInstance(m_Instance, callbackPtr);
+	vkDestroyInstance(m_Instance, m_CallbackPtr);
 
+
+	return result;
+}
+
+VkResult vkApp::CreateBuffer(VkBuffer* buffer)
+{
+	VkResult result = VK_SUCCESS;
+
+	VkBufferCreateInfo bci = {};
+
+	bci.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+	bci.size = 1024 * 1024;
+	bci.flags = 0;
+	bci.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+	bci.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+	result = vkCreateBuffer(m_Device, &bci, m_CallbackPtr, buffer);
+
+	return result;
+}
+
+VkResult vkApp::CreateImage(VkImage* image)
+{
+	VkResult result = VK_SUCCESS;
+
+	VkImageCreateInfo ici = {};
+
+	ici.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+	ici.imageType = VK_IMAGE_TYPE_2D;
+	ici.format = VK_FORMAT_R8G8B8A8_UNORM;
+	ici.extent = { 1024, 1024, 1 };
+	ici.mipLevels = 10;
+	ici.arrayLayers = 1;
+	ici.samples = VK_SAMPLE_COUNT_1_BIT;
+	ici.tiling = VK_IMAGE_TILING_OPTIMAL;
+	ici.usage = VK_IMAGE_USAGE_SAMPLED_BIT;
+	ici.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	ici.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+	result = vkCreateImage(m_Device, &ici, m_CallbackPtr, image);
 
 	return result;
 }
